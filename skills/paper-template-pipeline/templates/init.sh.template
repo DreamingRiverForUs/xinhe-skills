@@ -1,0 +1,90 @@
+#!/bin/bash
+
+# 心河Paper 模板字体下载脚本
+# 字体文件不进 git 仓库，通过此脚本按需下载
+#
+# 字体来源：腾讯云 COS
+# 完整字体列表：~/.hermes/skills/paper-template-pipeline/references/font_url.txt
+#
+# 使用方式：在下方 FONT_FILES 数组中声明需要的字体文件名
+
+set -e
+
+# ============================================================
+# 字体配置 —— 编辑这里添加需要的字体
+# ============================================================
+FONT_DIR="font"
+COS_BASE="https://xinhepaperdev-1257733029.cos.ap-shanghai.myqcloud.com/font"
+
+# 声明需要下载的字体（文件名）
+# 常用字体参考见 references/font-availability.md
+# 中文字体: simkai.ttf, simsun.ttc, simhei.ttf, simfang.ttf
+# 英文字体: arial.ttf, arialbd.ttf, arialbi.ttf, ariali.ttf, times.ttf, timesbd.ttf, timesbi.ttf, timesi.ttf
+FONT_FILES=(
+    "simkai.ttf"
+    "simsun.ttc"
+)
+
+# ============================================================
+# 以下为下载逻辑，通常无需修改
+# ============================================================
+
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+echo "========================================"
+echo "  心河Paper 字体初始化"
+echo "========================================"
+echo ""
+
+if [ ! -d "$FONT_DIR" ]; then
+    echo -e "${YELLOW}创建字体目录: $FONT_DIR${NC}"
+    mkdir -p "$FONT_DIR"
+else
+    echo -e "${GREEN}字体目录已存在: $FONT_DIR${NC}"
+fi
+
+if [ ${#FONT_FILES[@]} -eq 0 ]; then
+    echo ""
+    echo -e "${YELLOW}字体列表为空，跳过下载。${NC}"
+    echo ""
+    exit 0
+fi
+
+echo ""
+
+for filename in "${FONT_FILES[@]}"; do
+    filepath="$FONT_DIR/$filename"
+    url="${COS_BASE}/${filename}"
+
+    if [ -f "$filepath" ]; then
+        echo -e "${GREEN}✓ $filename 已存在，跳过${NC}"
+    else
+        echo -e "${YELLOW}↓ 正在下载: $filename${NC}"
+        if python3 -c "
+import urllib.request
+import sys
+try:
+    urllib.request.urlretrieve('$url', '$filepath')
+    sys.exit(0)
+except Exception as e:
+    print(f'Error: {e}', file=sys.stderr)
+    sys.exit(1)
+"; then
+            echo -e "${GREEN}✓ $filename 下载成功${NC}"
+        else
+            echo -e "${RED}✗ $filename 下载失败${NC}"
+            exit 1
+        fi
+    fi
+done
+
+echo ""
+echo "========================================"
+echo -e "${GREEN}  字体初始化完成！${NC}"
+echo "========================================"
+echo ""
+echo "字体文件列表:"
+ls -lh "$FONT_DIR"
